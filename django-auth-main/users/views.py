@@ -1,3 +1,4 @@
+import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.exceptions import AuthenticationFailed
@@ -36,12 +37,15 @@ class LoginView(APIView):
         
         token = jwt.encode(payload, 'secret', algorithm='HS256')
         # .decode('utf-8')
+        # response.set_cookie(key='jwt', value=token, httponly=True)
 
         response = Response()
-
-        response.set_cookie(key='jwt', value=token, httponly=True)
+        with open('../token.json','w') as json_file:
+            json.dump({"token":token},json_file)
+    
+        
         response.data = {
-            'jwt': token
+            'token': token
         }
         return response
 
@@ -49,12 +53,15 @@ class LoginView(APIView):
 class UserView(APIView):
 
     def get(self, request):
-        token = request.COOKIES.get('jwt')
-
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
+        token = request.headers["x-auth-token"]
+        
+        # if not token:
+        #     raise AuthenticationFailed('Unauthenticated!')
 
         try:
+        
+        #     with open('../token.json','w') as json_file:
+            # data=json.dump({"token":token},json_file)
             payload = jwt.decode(token, 'secret', algorithms=['HS256'])
         except jwt.ExpiredSignatureError:
             raise AuthenticationFailed('Unauthenticated!')
